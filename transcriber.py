@@ -24,7 +24,8 @@ def transcribe_audio(file_path):
     with audio as source:
         audio_data = recognizer.record(source)
         try:
-            transcription += recognizer.recognize_google(audio_data) + "\n"
+            # Specify language as Mandarin Chinese (zh-CN for Simplified, zh-TW for Traditional)
+            transcription += recognizer.recognize_google(audio_data, language='zh-CN') + "\n"
         except sr.UnknownValueError:
             transcription += "Audio unintelligible\n"
         except sr.RequestError as e:
