@@ -50,6 +50,7 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        git pull --rebase origin main
         git add *_transcript.txt 2>/dev/null || true
         if [ -n "$(git status --porcelain)" ]; then
           git commit -m "Add audio transcripts"
