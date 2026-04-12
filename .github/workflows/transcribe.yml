@@ -21,7 +21,7 @@ jobs:
         python-version: '3.10'
     
     - name: Install system dependencies
-      run: sudo apt-get update && sudo apt-get install -y ffmpeg portaudio19-dev
+      run: sudo apt-get update && sudo apt-get install -y ffmpeg
     
     - name: Install Python dependencies
       run: pip install -r requirements.txt
@@ -35,16 +35,25 @@ jobs:
           fi
         done
     
-    - name: Upload transcript
+    - name: Check for transcripts
+      run: ls -la *_transcript.txt 2>/dev/null || echo "No transcripts found"
+    
+    - name: Upload transcript as artifact
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: transcripts
         path: '*_transcript.txt'
+        if-no-files-found: ignore
     
-    - name: Commit transcript
+    - name: Commit and push transcript
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add *_transcript.txt || true
-        git commit -m "Add transcript for audio file" || echo "No changes to commit"
-        git push || echo "Nothing to push"
+        git add -A
+        if [ -n "$(git status --porcelain)" ]; then
+          git commit -m "Add audio transcripts"
+          git push
+        else
+          echo "No changes to commit"
+        fi
