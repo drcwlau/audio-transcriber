@@ -1,6 +1,7 @@
 name: Transcribe Audio File
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - '*.mp3'
@@ -44,6 +45,6 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add *_transcript.txt
+        git add *_transcript.txt || true
         git commit -m "Add transcript for audio file" || echo "No changes to commit"
-        git push
+        git push || echo "Nothing to push"
