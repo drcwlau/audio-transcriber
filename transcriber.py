@@ -1,5 +1,5 @@
 import os
-import wave
+import sys
 import pydub
 import speech_recognition as sr
 
@@ -22,7 +22,7 @@ def transcribe_audio(file_path):
 
     transcription = ""
     with audio as source:
-        audio_data = recognizer.record(source)  # This can be modified to handle chunking
+        audio_data = recognizer.record(source)
         try:
             transcription += recognizer.recognize_google(audio_data) + "\n"
         except sr.UnknownValueError:
@@ -31,7 +31,7 @@ def transcribe_audio(file_path):
             transcription += f"Could not request results from Google Speech Recognition service; {e}\n"
 
     if 'temp_wav_path' in locals():
-        os.remove(temp_wav_path)  # Clean up temporary file
+        os.remove(temp_wav_path)
 
     return transcription
 
@@ -47,7 +47,7 @@ def process_large_file(file_path):
         chunk.export(chunk_path, format='wav')
         transcript = transcribe_audio(chunk_path)
         transcripts.append(transcript)
-        os.remove(chunk_path)  # Clean up chunk file
+        os.remove(chunk_path)
 
     return ''.join(transcripts)
 
@@ -56,7 +56,7 @@ def main(audio_file_path):
         print("Error: Audio file does not exist.")
         return
 
-    if os.path.getsize(audio_file_path) > 10 * 1024 * 1024:  # Set threshold for large files (10MB)
+    if os.path.getsize(audio_file_path) > 10 * 1024 * 1024:
         print("Processing as large file...")
         transcription = process_large_file(audio_file_path)
     else:
@@ -69,6 +69,10 @@ def main(audio_file_path):
         f.write(transcription)
     print(f"Transcription saved to {output_file_path}")
 
-# Replace 'path_to_your_audio_file' with the actual audio file path
 if __name__ == "__main__":
-    main('path_to_your_audio_file')
+    if len(sys.argv) > 1:
+        audio_file = sys.argv[1]
+    else:
+        audio_file = 'path_to_your_audio_file'
+    
+    main(audio_file)
