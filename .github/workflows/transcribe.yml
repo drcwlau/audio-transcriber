@@ -1,5 +1,8 @@
 name: Transcribe Audio File
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -31,12 +34,9 @@ jobs:
         for file in *.mp3 *.m4a *.wav; do
           if [ -f "$file" ]; then
             echo "Transcribing: $file"
-            python transcriber.py "$file" -o "${file%.*}_transcript.txt"
+            python transcriber.py "$file"
           fi
         done
-    
-    - name: Check for transcripts
-      run: ls -la *_transcript.txt 2>/dev/null || echo "No transcripts found"
     
     - name: Upload transcript as artifact
       if: always()
@@ -50,10 +50,10 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add -A
+        git add *_transcript.txt 2>/dev/null || true
         if [ -n "$(git status --porcelain)" ]; then
           git commit -m "Add audio transcripts"
           git push
         else
-          echo "No changes to commit"
+          echo "No transcripts to commit"
         fi
