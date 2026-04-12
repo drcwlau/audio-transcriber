@@ -84,4 +84,15 @@ def main(audio_file_path, language='zh-CN'):
         transcription = transcribe_audio(audio_file_path, language=language)
 
     # Output to text file
-    output_file_path = os*
+    output_file_path = os.path.splitext(audio_file_path)[0] + "_transcript.txt"
+    with open(output_file_path, 'w') as f:
+        f.write(transcription)
+    print(f"Transcription saved to {output_file_path}")
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        audio_file = sys.argv[1]
+    else:
+        audio_file = 'path_to_your_audio_file'
+    
+    main(audio_file, language='zh-CN')
