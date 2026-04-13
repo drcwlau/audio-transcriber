@@ -36,24 +36,18 @@ jobs:
     - name: Install Python dependencies
       run: pip install -r requirements.txt
     
-    - name: Find and transcribe audio file
+    - name: Find and transcribe audio files
       run: |
         for file in *.mp3 *.m4a *.wav; do
           if [ -f "$file" ]; then
+            echo "=========================================="
             echo "Transcribing: $file"
+            echo "=========================================="
             python transcriber.py "$file"
           fi
         done
     
-    - name: Rename transcript files
-      run: |
-        for file in *.txt; do
-          if [[ "$file" != *"_transcript.txt" ]]; then
-            mv "$file" "${file%.txt}_transcript.txt"
-          fi
-        done
-    
-    - name: Upload transcript as artifact
+    - name: Upload transcripts as artifact
       if: always()
       uses: actions/upload-artifact@v4
       with:
@@ -61,16 +55,19 @@ jobs:
         path: '*_transcript.txt'
         if-no-files-found: ignore
     
-    - name: Commit and push transcript
+    - name: Commit and push transcripts
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git pull --rebase origin main || true
         git add *_transcript.txt 2>/dev/null || true
         git add *.txt 2>/dev/null || true
+        
         if [ -n "$(git status --porcelain)" ]; then
-          git commit -m "Add audio transcripts"
+          echo "Committing transcripts..."
+          git commit -m "Add audio transcripts - $(date '+%Y-%m-%d %H:%M:%S')"
           git push
+          echo "✅ Push successful"
         else
-          echo "No transcripts to commit"
+          echo "ℹ️  No transcripts to commit"
         fi
