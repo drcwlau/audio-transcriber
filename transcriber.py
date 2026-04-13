@@ -3,19 +3,40 @@ import sys
 import subprocess
 from pydub import AudioSegment
 
-def compress_audio(file_path, output_path, target_bitrate='64k'):
-    """Compress audio to reduce file size and speed up transcription"""
-    print(f"🔄 Compressing audio to {target_bitrate}...")
+def compress_audio_smart(file_path, output_path, target_size_mb=50):
+    """
+    Compress audio intelligently based on duration to meet target size.
+    For transcription, speech quality is preserved at 24-32 kbps.
+    Uses AAC codec which is optimal for speech compression.
+    """
+    print(f"🔄 Analyzing audio file...")
+    
     try:
         audio = AudioSegment.from_file(file_path)
-        # Export with reduced bitrate
-        audio.export(output_path, format='mp3', bitrate=target_bitrate)
+        original_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+        duration_minutes = len(audio) / 60000
         
-        original_size = os.path.getsize(file_path) / (1024 * 1024)
+        print(f"📊 Original: {original_size_mb:.2f}MB, Duration: {duration_minutes:.1f} min")
+        
+        # Calculate required bitrate to achieve target size
+        # bitrate (kbps) = (target_size_mb * 8000) / duration_seconds
+        duration_seconds = len(audio) / 1000
+        required_bitrate_kbps = int((target_size_mb * 8000) / duration_seconds)
+        
+        # Clamp to reasonable range (24-48 kbps for speech)
+        bitrate = max(24, min(48, required_bitrate_kbps))
+        
+        print(f"⚙️  Calculated bitrate: {bitrate}kbps to reach ~{target_size_mb}MB")
+        
+        # Export to AAC/M4A format (better compression than MP3 for speech)
+        audio.export(output_path, format='mp4', bitrate=f'{bitrate}k', codec='aac')
+        
         compressed_size = os.path.getsize(output_path) / (1024 * 1024)
-        reduction = ((original_size - compressed_size) / original_size) * 100
+        reduction = ((original_size_mb - compressed_size) / original_size_mb) * 100
         
-        print(f"✅ Compressed: {original_size:.2f}MB → {compressed_size:.2f}MB ({reduction:.1f}% reduction)")
+        print(f"✅ Compressed: {original_size_mb:.2f}MB → {compressed_size:.2f}MB ({reduction:.1f}% reduction)")
+        print(f"   Bitrate: {bitrate}kbps | Format: AAC/M4A (optimal for speech)")
+        
         return output_path
     except Exception as e:
         print(f"⚠️  Compression failed: {e}, using original file")
@@ -60,14 +81,15 @@ def main(audio_file_path, language='zh'):
     print(f"📁 Original file size: {file_size_mb:.2f} MB")
     
     # Compress if file is larger than 10MB
+    # Always compress large files to ensure <3min processing
     if file_size_mb > 10:
         print("⚡ File is large, compressing for faster processing...")
-        # For very large files, use lower bitrate
-        if file_size_mb > 50:
-            compressed_file = compress_audio(audio_file_path, 'temp_compressed.mp3', target_bitrate='32k')
-        else:
-            compressed_file = compress_audio(audio_file_path, 'temp_compressed.mp3', target_bitrate='64k')
-        
+        # Target 40-50MB to ensure <3min transcription on CPU
+        compressed_file = compress_audio_smart(
+            audio_file_path, 
+            'temp_compressed.m4a',
+            target_size_mb=50  # Adjust based on your CPU speed
+        )
         transcribe_file = compressed_file
     else:
         print("✅ File size is good, no compression needed")
